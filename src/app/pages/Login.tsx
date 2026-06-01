@@ -79,11 +79,11 @@ export function Login() {
               </button>
             </div>
 
-            <p className="text-xs text-muted-foreground mb-4 text-center">
+            {/* <p className="text-xs text-muted-foreground mb-4 text-center">
               Demo: o'qituvchi <code className="text-primary">teacher</code> /{' '}
               <code className="text-primary">teacher123</code> · talaba{' '}
               <code className="text-primary">dilnoza.k</code> / <code className="text-primary">pass123</code>
-            </p>
+            </p> */}
 
             <form onSubmit={handleLogin} className="space-y-5">
               <div>

@@ -103,7 +103,7 @@ Foydalanuvchi → Netlify (React)
 
 ## Muammolar
 
-- **CORS xatosi** — `CORS_ORIGIN` da Netlify URL to‘g‘ri va `https` bilan yozilganmi tekshiring.
+- **CORS xatosi** — Render → **Environment** → `CORS_ORIGIN` = `https://edu-tests.netlify.app` (oxirida `/` yo‘q, `http` emas). Bir nechta domen: `http://localhost:5173,https://edu-tests.netlify.app`. O‘zgartirgach **Manual Deploy**. Logda `CORS allowed origins:` qatorini tekshiring.
 - **401 / login ishlamaydi** — `JWT_SECRET` Renderda o‘rnatilganmi; seed bajarilganmi.
 - **Render uzoq javob bermaydi** — Free rejimda 15 daqiqadan keyin uxlaydi; birinchi so‘rov sekin bo‘lishi mumkin.
 - **API ulanmaydi** — `VITE_API_URL` ni o‘zgartirgach Netlifyda **Clear cache and deploy** qiling.
