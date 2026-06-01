@@ -29,15 +29,18 @@ npm run db:seed
 | **Start Command** | `npm start` |
 | **Health Check Path** | `/api/health` |
 
-4. **Environment Variables**:
+4. **Environment Variables** (barchasi **majburiy**, bo‘sh qoldirmang):
 
 | Kalit | Qiymat |
 |-------|--------|
 | `DATABASE_URL` | Neon connection string |
-| `JWT_SECRET` | Kamida 16 belgili tasodifiy matn |
+| `JWT_SECRET` | Kamida **16 belgi** (masalan PowerShell: `[Convert]::ToBase64String((1..32|%{Get-Random -Max 256})`) |
 | `JWT_EXPIRES_IN` | `7d` |
 | `CORS_ORIGIN` | Netlify sayt manzili, masalan `https://your-app.netlify.app` |
-| `PORT` | Render o‘zi beradi — qo‘shmasangiz ham bo‘ladi |
+
+`PORT` ni Render o‘zi beradi — qo‘shish shart emas.
+
+> **Sizdagi xato:** `JWT_SECRET` Renderda yo‘q bo‘lsa logda `path: ["JWT_SECRET"], message: "Required"` chiqadi. Dashboard → **Environment** → **Add** → saqlang → **Manual Deploy**.
 
 5. Deploy tugagach API manzilini yozing, masalan:  
    `https://edutest-backend.onrender.com`
