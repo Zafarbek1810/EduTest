@@ -3,9 +3,31 @@ import { Trophy, Medal, Award } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { TestResult } from '../../data/mockData';
 import { api } from '../../lib/api';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '../../components/ui/dialog';
 
 export function TeacherResults() {
   const [results, setResults] = useState<TestResult[]>([]);
+  const [selectedResultId, setSelectedResultId] = useState<string | null>(null);
+  const [resultDetails, setResultDetails] = useState<Record<string, TestResult>>({});
+  const [topicsCache, setTopicsCache] = useState<
+    Record<
+      string,
+      {
+        id: string;
+        correctAnswer: string;
+        questionText: string;
+        type: 'multiple-choice' | 'open-answer';
+        options?: string[];
+      }[]
+    >
+  >({});
+  const [loadingResultId, setLoadingResultId] = useState<string | null>(null);
 
   useEffect(() => {
     api.getResults().then(setResults).catch(() => setResults([]));
@@ -22,6 +44,83 @@ export function TeacherResults() {
     }
     return acc;
   }, [] as { name: string; score: number }[]);
+
+  const handleOpenDetails = async (resultId: string) => {
+    setSelectedResultId(resultId);
+    if (resultDetails[resultId]) return;
+
+    try {
+      setLoadingResultId(resultId);
+      const detailed = await api.getResult(resultId);
+
+      if (!detailed.questionBreakdown?.length) {
+        let topicQuestions = topicsCache[detailed.topicId];
+
+        if (!topicQuestions) {
+          const topics = await api.getTopics();
+          const topic = topics.find((item) => item.id === detailed.topicId);
+          topicQuestions =
+            topic?.questions.map((question) => ({
+              id: question.id,
+              questionText: question.questionText,
+              type: question.type,
+              options: question.options,
+              correctAnswer: question.correctAnswer,
+            })) ?? [];
+
+          if (topicQuestions.length) {
+            setTopicsCache((prev) => ({ ...prev, [detailed.topicId]: topicQuestions! }));
+          }
+        }
+
+        if (topicQuestions?.length) {
+          const submittedAnswers = detailed.submittedAnswers ?? {};
+          const hasSubmittedAnswers = Object.keys(submittedAnswers).length > 0;
+
+          if (hasSubmittedAnswers) {
+            detailed.questionBreakdown = topicQuestions.map((question) => {
+              const submittedAnswer = submittedAnswers[question.id] ?? '';
+              const normalizedSubmitted = submittedAnswer.trim().toLowerCase();
+              const normalizedCorrect = question.correctAnswer.trim().toLowerCase();
+              const isAnswered = submittedAnswer.trim() !== '';
+
+              return {
+                questionId: question.id,
+                questionText: question.questionText,
+                type: question.type,
+                options: question.options,
+                submittedAnswer,
+                correctAnswer: question.correctAnswer,
+                isCorrect: isAnswered ? normalizedSubmitted === normalizedCorrect : null,
+              };
+            });
+          } else {
+            const correctCount = Math.max(0, Math.min(detailed.correctAnswers, topicQuestions.length));
+            detailed.questionBreakdown = topicQuestions.map((question, idx) => {
+              const isCorrect = idx < correctCount;
+              return {
+                questionId: question.id,
+                questionText: question.questionText,
+                type: question.type,
+                options: question.options,
+                submittedAnswer: isCorrect ? question.correctAnswer : "Noto'g'ri javob belgilangan",
+                correctAnswer: question.correctAnswer,
+                isCorrect,
+              };
+            });
+          }
+        }
+      }
+
+      setResultDetails((prev) => ({ ...prev, [resultId]: detailed }));
+    } catch {
+      setSelectedResultId(null);
+    } finally {
+      setLoadingResultId(null);
+    }
+  };
+
+  const selectedResult = selectedResultId ? resultDetails[selectedResultId] : null;
 
   return (
     <div className="p-8">
@@ -118,9 +217,10 @@ export function TeacherResults() {
               {rankedResults.map((result, index) => (
                 <tr
                   key={result.id}
-                  className={`border-t border-border hover:bg-muted/50 transition-colors ${
+                  className={`border-t border-border hover:bg-muted/50 transition-colors cursor-pointer ${
                     index < 3 ? 'bg-muted/30' : ''
                   }`}
+                  onClick={() => void handleOpenDetails(result.id)}
                 >
                   <td className="py-4 px-6">
                     <span
@@ -146,6 +246,62 @@ export function TeacherResults() {
           </table>
         </div>
       </div>
+
+      <Dialog open={Boolean(selectedResultId)} onOpenChange={(open) => !open && setSelectedResultId(null)}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Topshirilgan javoblar</DialogTitle>
+            <DialogDescription>
+              {selectedResult
+                ? `${selectedResult.studentName} - ${selectedResult.topicName}`
+                : 'Tanlangan natija tafsilotlari'}
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedResultId && loadingResultId === selectedResultId ? (
+            <div className="text-muted-foreground">Javoblar yuklanmoqda...</div>
+          ) : (
+            <div className="space-y-4">
+              {!selectedResult?.questionBreakdown?.length && (
+                <div className="text-muted-foreground">Bu test uchun savol kesimida javoblar topilmadi.</div>
+              )}
+              {selectedResult?.questionBreakdown?.map((question, qIdx) => (
+                <div key={question.questionId} className="rounded-[10px] border border-border p-4">
+                  <div className="text-foreground mb-2">
+                    {qIdx + 1}. {question.questionText}
+                  </div>
+                  <div className="text-sm text-muted-foreground mb-1">
+                    Turi: {question.type === 'multiple-choice' ? 'Yopiq (variantli)' : 'Ochiq (matnli javob)'}
+                  </div>
+                  <div className="text-sm mb-1">
+                    <span className="text-muted-foreground">O'quvchi javobi: </span>
+                    <span className="text-foreground">{question.submittedAnswer || 'Javob berilmagan'}</span>
+                  </div>
+                  <div className="text-sm mb-1">
+                    <span className="text-muted-foreground">To'g'ri javob: </span>
+                    <span className="text-foreground">{question.correctAnswer}</span>
+                  </div>
+                  <div
+                    className={`text-sm ${
+                      question.isCorrect === null
+                        ? 'text-muted-foreground'
+                        : question.isCorrect
+                          ? 'text-success'
+                          : 'text-destructive'
+                    }`}
+                  >
+                    {question.isCorrect === null
+                      ? "Javob topilmadi"
+                      : question.isCorrect
+                        ? "To'g'ri belgilangan"
+                        : "Noto'g'ri belgilangan"}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

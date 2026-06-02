@@ -38,6 +38,16 @@ export interface TestResult {
   timeUsed: string;
   date: string;
   status: 'passed' | 'failed';
+  submittedAnswers?: Record<string, string>;
+  questionBreakdown?: Array<{
+    questionId: string;
+    questionText: string;
+    type: 'multiple-choice' | 'open-answer';
+    options?: string[];
+    submittedAnswer: string;
+    correctAnswer: string;
+    isCorrect: boolean | null;
+  }>;
 }
 
 export const mockStudents: Student[] = [

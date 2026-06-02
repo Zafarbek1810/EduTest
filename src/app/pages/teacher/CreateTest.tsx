@@ -25,12 +25,17 @@ export function TeacherCreateTest() {
   const [saving, setSaving] = useState(false);
 
   const handleSaveQuestion = () => {
+    const normalizedCorrectAnswer =
+      questionType === 'open-answer'
+        ? (correctAnswer.trim() || '__OPEN_ANSWER__')
+        : correctAnswer;
+
     const newQuestion: Question = {
       id: Date.now().toString(),
       type: questionType,
       questionText,
       options: questionType === 'multiple-choice' ? options : undefined,
-      correctAnswer,
+      correctAnswer: normalizedCorrectAnswer,
     };
     setQuestions([...questions, newQuestion]);
     setQuestionText('');
@@ -176,11 +181,11 @@ export function TeacherCreateTest() {
           {/* Open Answer */}
           {questionType === 'open-answer' && (
             <div className="bg-card rounded-[14px] p-6 border border-border">
-              <label className="block text-sm mb-2 text-foreground">To'g'ri javob</label>
+              <label className="block text-sm mb-2 text-foreground">Namuna javob (ixtiyoriy)</label>
               <textarea
                 value={correctAnswer}
                 onChange={(e) => setCorrectAnswer(e.target.value)}
-                placeholder="To'g'ri javobni kiriting"
+                placeholder="Xohlasangiz namuna javob kiriting"
                 rows={3}
                 className="w-full bg-input-background border border-border rounded-[10px] py-3 px-4 text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary transition-all resize-none"
               />
